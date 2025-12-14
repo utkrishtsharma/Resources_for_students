@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DAA Exam Priority Dashboard - GameBoy Edition</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'VT323', monospace;
+            background-color: #0f380f;
+            color: #9bbc0f;
+            line-height: 1.4;
+            padding: 20px;
+            background-image: 
+                radial-gradient(circle at 25% 25%, rgba(15, 56, 15, 0.8) 0%, rgba(15, 56, 15, 0.95) 100%),
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(20, 80, 20, 0.3) 2px, rgba(20, 80, 20, 0.3) 4px);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* GameBoy Container */
+        .gameboy-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: #306230;
+            border: 12px solid #8bac0f;
+            border-radius: 20px;
+            box-shadow: 
+                0 0 0 4px #0f380f,
+                0 10px 30px rgba(0, 0, 0, 0.7),
+                inset 0 0 20px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* GameBoy Screen Effect */
+        .gameboy-container::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                rgba(18, 90, 18, 0.3) 50%,
+                rgba(0, 0, 0, 0.2) 50%
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .header {
+            background-color: #0f380f;
+            color: #9bbc0f;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 4px solid #8bac0f;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .header h1 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 0 #306230;
+            letter-spacing: 1px;
+        }
+        
+        .header p {
+            font-size: 1.2rem;
+            color: #8bac0f;
+        }
+        
+        .content {
+            padding: 20px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        /* Unit Distribution - GameBoy Style */
+        .unit-distribution {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+        
+        .unit-box {
+            background-color: #0f380f;
+            color: #9bbc0f;
+            padding: 15px 10px;
+            border-radius: 8px;
+            text-align: center;
+            border: 2px solid #8bac0f;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+            transition: transform 0.1s ease;
+        }
+        
+        .unit-box:hover {
+            transform: translateY(-2px);
+            border-color: #9bbc0f;
+        }
+        
+        .unit-box h4 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+            color: #8bac0f;
+        }
+        
+        .unit-box .percentage {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 10px 0;
+            color: #9bbc0f;
+        }
+        
+        .unit-box .marks {
+            font-size: 0.9rem;
+            color: #8bac0f;
+            margin-bottom: 5px;
+        }
+        
+        /* Card Style */
+        .card {
+            background-color: #0f380f;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 2px solid #8bac0f;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        
+        .card h3 {
+            color: #8bac0f;
+            margin-bottom: 15px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1rem;
+            border-bottom: 1px solid #306230;
+            padding-bottom: 5px;
+        }
+        
+        /* Priority Table */
+        .priority-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: #0f380f;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #8bac0f;
+        }
+        
+        .priority-table thead {
+            background-color: #306230;
+            color: #9bbc0f;
+        }
+        
+        .priority-table th {
+            padding: 12px 10px;
+            text-align: left;
+            font-weight: normal;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.7rem;
+            border-bottom: 2px solid #8bac0f;
+        }
+        
+        .priority-table td {
+            padding: 10px;
+            border-bottom: 1px solid #306230;
+            font-size: 0.9rem;
+        }
+        
+        .priority-table tbody tr:hover {
+            background-color: rgba(48, 98, 48, 0.5);
+        }
+        
+        /* Priority Badges */
+        .priority-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            display: inline-block;
+            font-family: 'Press Start 2P', cursive;
+        }
+        
+        .critical {
+            background: #d22d2d;
+            color: #0f380f;
+        }
+        
+        .high {
+            background: #d2691e;
+            color: #0f380f;
+        }
+        
+        .medium {
+            background: #8bac0f;
+            color: #0f380f;
+        }
+        
+        .low {
+            background: #306230;
+            color: #9bbc0f;
+        }
+        
+        /* Bar Chart */
+        .bar-chart {
+            margin: 20px 0;
+        }
+        
+        .bar-item {
+            margin-bottom: 15px;
+        }
+        
+        .bar-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+        
+        .bar-bg {
+            background: #306230;
+            height: 20px;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid #8bac0f;
+        }
+        
+        .bar-fill {
+            height: 100%;
+            background: #9bbc0f;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 10px;
+            color: #0f380f;
+            font-weight: bold;
+            font-size: 0.8rem;
+            transition: width 1s ease;
+        }
+        
+        /* Top Ten */
+        .top-ten {
+            background-color: #0f380f;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 2px solid #8bac0f;
+        }
+        
+        .top-ten h3 {
+            color: #8bac0f;
+            margin-bottom: 20px;
+            text-align: center;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1rem;
+        }
+        
+        .top-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+        
+        .top-item {
+            background-color: #306230;
+            padding: 12px;
+            border-radius: 6px;
+            border-left: 4px solid #8bac0f;
+        }
+        
+        .top-item .rank {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1rem;
+            font-weight: bold;
+            color: #9bbc0f;
+            margin-bottom: 5px;
+        }
+        
+        .top-item .topic {
+            font-weight: bold;
+            color: #8bac0f;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+        
+        /* Grid Layout */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        /* Emergency Button */
+        .emergency-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        
+        .emergency-btn {
+            display: block;
+            background-color: #d22d2d;
+            color: #0f380f;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1.2rem;
+            padding: 20px 30px;
+            border: none;
+            border-radius: 10px;
+            text-align: center;
+            text-decoration: none;
+            cursor: pointer;
+            box-shadow: 
+                0 0 0 4px #0f380f,
+                0 0 20px rgba(210, 45, 45, 0.7),
+                inset 0 0 10px rgba(0, 0, 0, 0.3);
+            animation: blink 1s infinite alternate;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            line-height: 1.4;
+            width: 350px;
+        }
+        
+        .emergency-btn:hover {
+            background-color: #ff3333;
+            transform: scale(1.05);
+            box-shadow: 
+                0 0 0 4px #0f380f,
+                0 0 30px rgba(255, 51, 51, 0.9),
+                inset 0 0 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        @keyframes blink {
+            0% {
+                opacity: 1;
+                box-shadow: 
+                    0 0 0 4px #0f380f,
+                    0 0 20px rgba(210, 45, 45, 0.7),
+                    inset 0 0 10px rgba(0, 0, 0, 0.3);
+            }
+            100% {
+                opacity: 0.8;
+                box-shadow: 
+                    0 0 0 4px #0f380f,
+                    0 0 30px rgba(210, 45, 45, 0.9),
+                    inset 0 0 10px rgba(0, 0, 0, 0.3);
+            }
+        }
+        
+        /* Time adjustment for 4-6 hours */
+        .time-adjustment {
+            background-color: #306230;
+            border: 2px dashed #8bac0f;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .time-adjustment h4 {
+            font-family: 'Press Start 2P', cursive;
+            color: #9bbc0f;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+        
+        .time-adjustment p {
+            color: #8bac0f;
+            font-size: 1.1rem;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .unit-distribution {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .priority-table {
+                font-size: 0.8rem;
+            }
+            
+            .priority-table th,
+            .priority-table td {
+                padding: 8px 6px;
+            }
+            
+            .emergency-btn {
+                width: 300px;
+                font-size: 1rem;
+                padding: 15px 20px;
+            }
+            
+            .header h1 {
+                font-size: 1.2rem;
+            }
+            
+            .top-list {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .unit-distribution {
+                grid-template-columns: 1fr;
+            }
+            
+            .emergency-btn {
+                width: 250px;
+                font-size: 0.9rem;
+                padding: 12px 15px;
+            }
+            
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* GameBoy Controls */
+        .controls {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        
+        .d-pad {
+            width: 80px;
+            height: 80px;
+            position: relative;
+            margin-right: 30px;
+        }
+        
+        .d-pad-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 30px;
+            height: 30px;
+            background-color: #0f380f;
+            border-radius: 50%;
+            border: 2px solid #8bac0f;
+        }
+        
+        .d-pad-up, .d-pad-down, .d-pad-left, .d-pad-right {
+            position: absolute;
+            background-color: #0f380f;
+            border: 2px solid #8bac0f;
+        }
+        
+        .d-pad-up, .d-pad-down {
+            width: 30px;
+            height: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .d-pad-up {
+            top: 0;
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .d-pad-down {
+            bottom: 0;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+        }
+        
+        .d-pad-left, .d-pad-right {
+            width: 20px;
+            height: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        
+        .d-pad-left {
+            left: 0;
+            border-right: none;
+            border-radius: 8px 0 0 8px;
+        }
+        
+        .d-pad-right {
+            right: 0;
+            border-left: none;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .ab-buttons {
+            display: flex;
+            align-items: center;
+        }
+        
+        .ab-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #0f380f;
+            border: 2px solid #8bac0f;
+            margin: 0 10px;
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
+        }
+        
+        .ab-button.a {
+            background-color: #d22d2d;
+        }
+        
+        .ab-button.b {
+            background-color: #306230;
+        }
+    </style>
+</head>
+<body>
+    <!-- Emergency Button -->
+    <div class="emergency-container">
+        <a href="https://yl4i6vn2nukbg.ok.kimi.link/#" class="emergency-btn" target="_blank">
+            I need 85% marks in 5 hours and idk shit !
+        </a>
+    </div>
+    
+    <!-- GameBoy Dashboard -->
+    <div class="gameboy-container">
+        <div class="header">
+            <h1>DAA Exam Priority Dashboard</h1>
+            <p>GGSIPU B.Tech 5th Semester | GameBoy Edition</p>
+        </div>
+        
+        <div class="content">
+            <!-- Unit Distribution -->
+            <h2 style="color: #8bac0f; margin-bottom: 15px; font-family: 'Press Start 2P', cursive; font-size: 1rem;">Unit-Wise Weightage</h2>
+            <div class="unit-distribution">
+                <div class="unit-box">
+                    <h4>UNIT-I</h4>
+                    <div class="percentage">32%</div>
+                    <div class="marks">30-35 marks</div>
+                    <div style="font-size: 0.8rem; margin-top: 8px;">Asymptotic, Recurrences, D&C, Sorting</div>
+                </div>
+                <div class="unit-box">
+                    <h4>UNIT-II</h4>
+                    <div class="percentage">24%</div>
+                    <div class="marks">20-25 marks</div>
+                    <div style="font-size: 0.8rem; margin-top: 8px;">Greedy, Backtracking</div>
+                </div>
+                <div class="unit-box">
+                    <h4>UNIT-III</h4>
+                    <div class="percentage">26%</div>
+                    <div class="marks">25-30 marks</div>
+                    <div style="font-size: 0.8rem; margin-top: 8px;">Dynamic Programming, B&B</div>
+                </div>
+                <div class="unit-box">
+                    <h4>UNIT-IV</h4>
+                    <div class="percentage">18%</div>
+                    <div class="marks">15-20 marks</div>
+                    <div style="font-size: 0.8rem; margin-top: 8px;">String Matching, NP-Complete</div>
+                </div>
+            </div>
+            
+            <!-- Topic Weightage Chart -->
+            <div class="card">
+                <h3>Top Topics by Exam Weightage</h3>
+                <div class="bar-chart">
+                    <div class="bar-item">
+                        <div class="bar-label">
+                            <span>Dynamic Programming (0/1 Knapsack, MCM, LCS)</span>
+                            <span>18%</span>
+                        </div>
+                        <div class="bar-bg">
+                            <div class="bar-fill" style="width: 90%;">CRITICAL</div>
+                        </div>
+                    </div>
+                    
+                    <div class="bar-item">
+                        <div class="bar-label">
+                            <span>Sorting Algorithms & Analysis</span>
+                            <span>14%</span>
+                        </div>
+                        <div class="bar-bg">
+                            <div class="bar-fill" style="width: 70%;">CRITICAL</div>
+                        </div>
+                    </div>
+                    
+                    <div class="bar-item">
+                        <div class="bar-label">
+                            <span>Greedy Algorithms (Huffman, MST, Dijkstra)</span>
+                            <span>12%</span>
+                        </div>
+                        <div class="bar-bg">
+                            <div class="bar-fill" style="width: 60%;">CRITICAL</div>
+                        </div>
+                    </div>
+                    
+                    <div class="bar-item">
+                        <div class="bar-label">
+                            <span>Recurrence Relations & Master's Theorem</span>
+                            <span>10%</span>
+                        </div>
+                        <div class="bar-bg">
+                            <div class="bar-fill" style="width: 50%;">HIGH</div>
+                        </div>
+                    </div>
+                    
+                    <div class="bar-item">
+                        <div class="bar-label">
+                            <span>Backtracking (N-Queens, Graph Coloring)</span>
+                            <span>10%</span>
+                        </div>
+                        <div class="bar-bg">
+                            <div class="bar-fill" style="width: 50%;">HIGH</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Priority Matrix -->
+            <h2 style="color: #8bac0f; margin: 20px 0 15px 0; font-family: 'Press Start 2P', cursive; font-size: 1rem;">Topic Priority Matrix</h2>
+            <table class="priority-table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Topic</th>
+                        <th>Unit</th>
+                        <th>Weightage</th>
+                        <th>Priority</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>1</strong></td>
+                        <td>Dynamic Programming (0/1 Knapsack, MCM, LCS)</td>
+                        <td>III</td>
+                        <td><strong>18%</strong></td>
+                        <td><span class="priority-badge critical">CRITICAL</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>2</strong></td>
+                        <td>Sorting Algorithms (Quick, Merge) & Analysis</td>
+                        <td>I</td>
+                        <td><strong>14%</strong></td>
+                        <td><span class="priority-badge critical">CRITICAL</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>3</strong></td>
+                        <td>Greedy (Huffman, MST, Dijkstra)</td>
+                        <td>II</td>
+                        <td><strong>12%</strong></td>
+                        <td><span class="priority-badge critical">CRITICAL</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>4</strong></td>
+                        <td>Recurrence Relations & Master's Theorem</td>
+                        <td>I</td>
+                        <td><strong>10%</strong></td>
+                        <td><span class="priority-badge high">HIGH</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>5</strong></td>
+                        <td>Backtracking (N-Queens, Hamiltonian)</td>
+                        <td>II</td>
+                        <td><strong>10%</strong></td>
+                        <td><span class="priority-badge high">HIGH</span></td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <!-- Time Adjustment for 4-6 hours -->
+            <div class="time-adjustment">
+                <h4>ADJUSTED PREP TIME: 4-6 HOURS</h4>
+                <p>Focus only on CRITICAL & HIGH priority topics to maximize marks in minimal time</p>
+            </div>
+            
+            <!-- Top 10 Must-Know -->
+            <div class="top-ten">
+                <h3>Top 5 Must-Know Topics (4-6 Hour Strategy)</h3>
+                <div class="top-list">
+                    <div class="top-item">
+                        <div class="rank">#1</div>
+                        <div class="topic">0/1 Knapsack (DP)</div>
+                        <div>⏱️ 1 hour | Table construction essential</div>
+                    </div>
+                    <div class="top-item">
+                        <div class="rank">#2</div>
+                        <div class="topic">Quick Sort Analysis</div>
+                        <div>⏱️ 45 min | Average/Worst case proofs</div>
+                    </div>
+                    <div class="top-item">
+                        <div class="rank">#3</div>
+                        <div class="topic">Matrix Chain Multiplication</div>
+                        <div>⏱️ 45 min | Optimal parenthesization</div>
+                    </div>
+                    <div class="top-item">
+                        <div class="rank">#4</div>
+                        <div class="topic">Huffman Coding</div>
+                        <div>⏱️ 30 min | Tree construction required</div>
+                    </div>
+                    <div class="top-item">
+                        <div class="rank">#5</div>
+                        <div class="topic">Master's Theorem</div>
+                        <div>⏱️ 30 min | Multiple recurrence solving</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Study Strategy -->
+            <div class="grid">
+                <div class="card">
+                    <h3>Question Pattern</h3>
+                    <div style="margin-top: 15px;">
+                        <div style="margin-bottom: 8px;"><strong>Theory + Definitions:</strong> 25%</div>
+                        <div style="margin-bottom: 8px;"><strong>Algorithm Analysis:</strong> 30%</div>
+                        <div style="margin-bottom: 8px;"><strong>Problem Solving:</strong> 35%</div>
+                        <div><strong>Proofs & Comparisons:</strong> 10%</div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>4-Hour Prep Order</h3>
+                    <div style="margin-top: 15px; line-height: 1.6;">
+                        <div>1️⃣ Dynamic Programming (1.5h)</div>
+                        <div>2️⃣ Sorting + Analysis (1h)</div>
+                        <div>3️⃣ Greedy Algorithms (1h)</div>
+                        <div>4️⃣ Recurrence (30 min)</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- GameBoy Controls -->
+            <div class="controls">
+                <div class="d-pad">
+                    <div class="d-pad-center"></div>
+                    <div class="d-pad-up"></div>
+                    <div class="d-pad-down"></div>
+                    <div class="d-pad-left"></div>
+                    <div class="d-pad-right"></div>
+                </div>
+                <div class="ab-buttons">
+                    <div class="ab-button b"></div>
+                    <div class="ab-button a"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add some retro sound effects
+        document.addEventListener('DOMContentLoaded', function() {
+            // Make emergency button more interactive
+            const emergencyBtn = document.querySelector('.emergency-btn');
+            
+            emergencyBtn.addEventListener('mouseenter', function() {
+                // Create a visual effect
+                this.style.animation = 'blink 0.3s infinite alternate';
+            });
+            
+            emergencyBtn.addEventListener('mouseleave', function() {
+                this.style.animation = 'blink 1s infinite alternate';
+            });
+            
+            // Add click sound effect (using a simple beep via audio context)
+            emergencyBtn.addEventListener('click', function(e) {
+                // Create a simple beep sound using Web Audio API
+                try {
+                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    oscillator.frequency.value = 800;
+                    oscillator.type = 'square';
+                    
+                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                    
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + 0.2);
+                } catch (err) {
+                    console.log("Audio context not supported");
+                }
+                
+                // Add a visual confirmation
+                this.style.backgroundColor = '#ff3333';
+                this.style.boxShadow = '0 0 0 4px #0f380f, 0 0 40px rgba(255, 51, 51, 1)';
+                
+                setTimeout(() => {
+                    this.style.backgroundColor = '#d22d2d';
+                    this.style.boxShadow = '0 0 0 4px #0f380f, 0 0 20px rgba(210, 45, 45, 0.7), inset 0 0 10px rgba(0, 0, 0, 0.3)';
+                }, 300);
+            });
+            
+            // Add retro pixelation effect to bars
+            const barFills = document.querySelectorAll('.bar-fill');
+            barFills.forEach(bar => {
+                const width = bar.style.width;
+                // Add a subtle animation when page loads
+                bar.style.width = '0%';
+                setTimeout(() => {
+                    bar.style.width = width;
+                }, 300);
+            });
+        });
+    </script>
+</body>
+</html>

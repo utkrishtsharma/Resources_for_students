@@ -1,6 +1,5 @@
-<img src="https://r2cdn.perplexity.ai/pplx-full-logo-primary-dark%402x.png" style="height:64px;margin-right:32px"/>
 
-# make an understable concize answer No, quantum runtime doesn't scale as 2×N2 \times N2×N (or 2×N×M2 \times N \times M2×N×M); that's a misconception—it's exponential in the number of qubits due to superposition over 2n2^n2n states.
+# Quantum Computation [Multiple Degrees of Freedom]
 
 Superposition Basics
 Each qubit in superposition explores 2 states (e.g., spin up/down or |0⟩ + |1⟩), so n independent qubits represent 2n2^n2n basis states simultaneously.[[en.wikipedia](https://en.wikipedia.org/wiki/Photon_polarization)]​ In the video's D-Wave-like quantum annealer, each "particle" (qubit) uses magnetic spin flips (|↑⟩ or |↓⟩), giving 2N2^N2N configurations for N qubits.[[spinquanta](https://www.spinquanta.com/news-detail/how-fast-are-quantum-computers-key-insights-explained20250207030618)]​
@@ -50,4 +49,9 @@ Hardware: Gates/depth (microseconds), not $2^n$. Simulation classically needs $O
 [^2]: https://www.nature.com/articles/srep25977
 
 [^3]: https://arxiv.org/html/2411.15631v2
+
+
+use smart tools 
+<img src="https://r2cdn.perplexity.ai/pplx-full-logo-primary-dark%402x.png" style="height:64px;margin-right:32px"/>
+
 

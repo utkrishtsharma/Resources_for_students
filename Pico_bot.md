@@ -1,4 +1,4 @@
-create a downloadable formated notes/📱 Picobot on Android (Termux) — Minimal Secure Agent Setup
+📱 Picobot on Android (Termux) — Minimal Secure Agent Setup
 
 A lightweight, fully local AI agent environment running on Android using Termux + Picobot + Groq.
 Designed as a safe, reproducible alternative to heavier agent stacks.

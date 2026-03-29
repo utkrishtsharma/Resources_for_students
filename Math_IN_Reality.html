@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>φ — Logarithmic Image Transforms</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@300;400;500&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&display=swap"/>
+<style>
+  :root {
+    --φ: 1.6180339887;
+    --bg:       #04080f;
+    --bg2:      #070d1a;
+    --glass:    rgba(255,255,255,0.04);
+    --glass-b:  rgba(255,255,255,0.08);
+    --border:   rgba(255,255,255,0.09);
+    --teal:     #00e5c0;
+    --teal-dim: rgba(0,229,192,0.15);
+    --gold:     #c9a84c;
+    --gold-dim: rgba(201,168,76,0.15);
+    --text:     rgba(255,255,255,0.88);
+    --text-dim: rgba(255,255,255,0.45);
+    --red:      #ff6b6b;
+    --r:        14px;
+    --r-sm:     8px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+background: var(–bg);
+color: var(–text);
+font-family: ‘Cormorant Garamond’, Georgia, serif;
+font-size: 16px;
+line-height: 1.6;
+min-height: 100vh;
+overflow-x: hidden;
+}
+
+/* ── Background grid ── */
+body::before {
+content: ‘’;
+position: fixed; inset: 0; z-index: 0;
+background-image:
+linear-gradient(rgba(0,229,192,0.03) 1px, transparent 1px),
+linear-gradient(90deg, rgba(0,229,192,0.03) 1px, transparent 1px);
+background-size: 40px 40px;
+pointer-events: none;
+}
+body::after {
+content: ‘’;
+position: fixed; inset: 0; z-index: 0;
+background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,100,80,0.12) 0%, transparent 70%);
+pointer-events: none;
+}
+
+/* ── Layout ── */
+.app { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 20px 16px 60px; }
+
+/* ── Header ── */
+header { text-align: center; padding: 40px 0 32px; }
+.phi-badge {
+display: inline-flex; align-items: center; gap: 8px;
+background: var(–gold-dim); border: 1px solid rgba(201,168,76,0.3);
+border-radius: 99px; padding: 4px 14px; margin-bottom: 18px;
+font-family: ‘JetBrains Mono’, monospace; font-size: 11px;
+color: var(–gold); letter-spacing: 0.08em; text-transform: uppercase;
+}
+.phi-badge span { font-size: 16px; }
+h1 {
+font-family: ‘Playfair Display’, serif;
+font-size: clamp(28px, 7vw, 48px);
+font-weight: 400; letter-spacing: -0.02em; line-height: 1.1;
+background: linear-gradient(135deg, #fff 30%, var(–teal) 70%, var(–gold) 100%);
+-webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.subtitle {
+margin-top: 10px; font-style: italic; color: var(–text-dim);
+font-size: 15px; letter-spacing: 0.01em;
+}
+.eq-strip {
+display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;
+margin-top: 18px; font-family: ‘JetBrains Mono’, monospace;
+font-size: 11px; color: var(–text-dim);
+}
+.eq-strip span {
+background: var(–glass); border: 1px solid var(–border);
+padding: 3px 10px; border-radius: 4px;
+}
+.eq-strip .h { color: var(–teal); }
+
+/* ── Glass panel ── */
+.glass {
+background: var(–glass);
+border: 1px solid var(–border);
+border-radius: var(–r);
+backdrop-filter: blur(12px);
+-webkit-backdrop-filter: blur(12px);
+}
+.panel { padding: 20px; margin-bottom: 16px; }
+
+/* ── Upload zone ── */
+.upload-zone {
+border: 2px dashed var(–border);
+border-radius: var(–r);
+padding: 40px 20px;
+text-align: center;
+cursor: pointer;
+transition: all 0.25s ease;
+position: relative; overflow: hidden;
+}
+.upload-zone:hover, .upload-zone.drag {
+border-color: var(–teal);
+background: var(–teal-dim);
+}
+.upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.upload-icon { font-size: 36px; margin-bottom: 10px; opacity: 0.6; }
+.upload-label { font-size: 15px; color: var(–text-dim); }
+.upload-label strong { color: var(–teal); }
+
+/* ── Transform selector ── */
+.section-label {
+font-family: ‘JetBrains Mono’, monospace;
+font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+color: var(–text-dim); margin-bottom: 10px;
+}
+.transform-grid {
+display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+}
+@media (max-width: 500px) {
+.transform-grid { grid-template-columns: repeat(2, 1fr); }
+}
+.t-btn {
+background: var(–glass); border: 1px solid var(–border);
+border-radius: var(–r-sm); padding: 10px 8px; cursor: pointer;
+text-align: center; transition: all 0.2s; color: var(–text-dim);
+font-family: ‘JetBrains Mono’, monospace; font-size: 10px;
+letter-spacing: 0.04em;
+}
+.t-btn .t-icon { font-size: 18px; margin-bottom: 4px; display: block; }
+.t-btn .t-name { display: block; font-size: 9px; margin-top: 2px; }
+.t-btn:hover { border-color: var(–teal); color: var(–teal); }
+.t-btn.active {
+border-color: var(–teal); color: var(–teal);
+background: var(–teal-dim);
+box-shadow: 0 0 20px rgba(0,229,192,0.12);
+}
+
+/* ── Sliders ── */
+.sliders { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }
+.slider-row { display: flex; align-items: center; gap: 10px; }
+.slider-label {
+font-family: ‘JetBrains Mono’, monospace; font-size: 10px;
+color: var(–text-dim); width: 60px; flex-shrink: 0;
+}
+input[type=range] {
+flex: 1; -webkit-appearance: none; appearance: none;
+height: 3px; border-radius: 2px;
+background: linear-gradient(to right, var(–teal) 0%, var(–teal) var(–pct, 50%), rgba(255,255,255,0.1) var(–pct, 50%));
+outline: none; cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+-webkit-appearance: none; width: 14px; height: 14px;
+border-radius: 50%; background: var(–teal);
+box-shadow: 0 0 8px rgba(0,229,192,0.5);
+}
+.slider-val {
+font-family: ‘JetBrains Mono’, monospace; font-size: 10px;
+color: var(–teal); width: 38px; text-align: right;
+}
+
+/* ── Canvas area ── */
+.canvas-row {
+display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+}
+@media (max-width: 600px) { .canvas-row { grid-template-columns: 1fr; } }
+.canvas-wrap { position: relative; }
+.canvas-title {
+font-family: ‘JetBrains Mono’, monospace; font-size: 10px;
+letter-spacing: 0.08em; text-transform: uppercase; color: var(–text-dim);
+margin-bottom: 6px;
+}
+.canvas-box {
+background: rgba(0,0,0,0.4); border: 1px solid var(–border);
+border-radius: var(–r-sm); overflow: hidden;
+aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center;
+position: relative;
+}
+.canvas-box canvas { max-width: 100%; max-height: 100%; display: block; }
+.canvas-placeholder {
+color: var(–text-dim); font-size: 13px; font-style: italic; text-align: center; padding: 20px;
+}
+.phi-tag {
+position: absolute; bottom: 6px; right: 6px;
+background: rgba(0,0,0,0.6); border: 1px solid var(–border);
+border-radius: 4px; padding: 2px 6px;
+font-family: ‘JetBrains Mono’, monospace; font-size: 9px; color: var(–gold);
+}
+
+/* ── Apply / Download buttons ── */
+.btn-row { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+.btn {
+flex: 1; min-width: 120px; padding: 12px 18px;
+border: 1px solid var(–border); border-radius: var(–r-sm);
+background: var(–glass); color: var(–text);
+font-family: ‘JetBrains Mono’, monospace; font-size: 11px;
+letter-spacing: 0.06em; cursor: pointer; transition: all 0.2s;
+text-align: center;
+}
+.btn:hover { border-color: var(–teal); color: var(–teal); background: var(–teal-dim); }
+.btn.primary { background: var(–teal); color: #04080f; border-color: var(–teal); font-weight: 500; }
+.btn.primary:hover { background: #00c9aa; box-shadow: 0 0 20px rgba(0,229,192,0.3); }
+.btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* ── Progress ── */
+.progress-bar {
+height: 2px; background: rgba(255,255,255,0.06);
+border-radius: 1px; overflow: hidden; margin-top: 10px;
+display: none;
+}
+.progress-bar.show { display: block; }
+.progress-fill {
+height: 100%; background: var(–teal);
+width: 0%; transition: width 0.1s; border-radius: 1px;
+}
+
+/* ── Notes accordion ── */
+.notes-section { margin-top: 8px; }
+.notes-header {
+display: flex; align-items: center; justify-content: space-between;
+padding: 16px 20px; cursor: pointer; user-select: none;
+border-radius: var(–r);
+}
+.notes-header:hover { background: var(–glass-b); }
+.notes-title-group { display: flex; align-items: center; gap: 10px; }
+.notes-icon { font-size: 18px; }
+.notes-title {
+font-family: ‘Playfair Display’, serif; font-size: 17px;
+font-weight: 400; letter-spacing: -0.01em;
+}
+.notes-chevron {
+font-family: ‘JetBrains Mono’, monospace; font-size: 12px;
+color: var(–teal); transition: transform 0.3s;
+}
+.notes-chevron.open { transform: rotate(180deg); }
+
+.accordion { overflow: hidden; }
+.accordion-item {
+border-top: 1px solid var(–border);
+}
+.acc-header {
+display: flex; align-items: center; justify-content: space-between;
+padding: 14px 20px; cursor: pointer; user-select: none;
+transition: background 0.15s;
+}
+.acc-header:hover { background: rgba(255,255,255,0.03); }
+.acc-title-row { display: flex; align-items: center; gap: 10px; }
+.acc-num {
+font-family: ‘JetBrains Mono’, monospace; font-size: 10px;
+color: var(–teal); width: 20px;
+}
+.acc-title { font-size: 14px; font-weight: 400; letter-spacing: 0.01em; }
+.acc-tag {
+font-family: ‘JetBrains Mono’, monospace; font-size: 9px;
+padding: 2px 7px; border-radius: 3px; background: var(–glass);
+border: 1px solid var(–border); color: var(–text-dim);
+}
+.acc-arrow { color: var(–text-dim); font-size: 11px; transition: transform 0.25s; }
+.acc-arrow.open { transform: rotate(90deg); color: var(–teal); }
+
+.acc-body {
+max-height: 0; overflow: hidden;
+transition: max-height 0.4s cubic-bezier(0.4,0,0.2,1);
+}
+.acc-body.open { max-height: 1000px; }
+.acc-content { padding: 4px 20px 18px 50px; }
+
+.bullet {
+display: flex; gap: 8px; margin-bottom: 8px; align-items: flex-start;
+font-size: 14px; line-height: 1.65; color: rgba(255,255,255,0.78);
+}
+.bullet::before {
+content: ‘◆’; color: var(–teal); font-size: 7px;
+margin-top: 7px; flex-shrink: 0;
+}
+.bullet .math {
+font-family: ‘JetBrains Mono’, monospace; font-size: 12px;
+color: var(–gold); background: rgba(201,168,76,0.1);
+padding: 1px 5px; border-radius: 3px;
+}
+.note-aside {
+margin-top: 10px; padding: 10px 14px;
+background: rgba(0,229,192,0.06); border-left: 2px solid var(–teal);
+border-radius: 0 6px 6px 0; font-size: 13px; color: var(–text-dim);
+font-style: italic;
+}
+
+/* ── Status ── */
+#status {
+font-family: ‘JetBrains Mono’, monospace; font-size: 11px;
+color: var(–text-dim); margin-top: 6px; min-height: 16px;
+text-align: center;
+}
+#status.ok { color: var(–teal); }
+#status.err { color: var(–red); }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+</style>
+
+</head>
+<body>
+<div class="app">
+
+  <!-- ══ HEADER ══ -->
+
+  <header>
+    <div class="phi-badge"><span>φ</span> = 1.6180339887…</div>
+    <h1>Logarithmic Image Transforms</h1>
+    <p class="subtitle">conformal maps · complex logarithm · golden ratio · Escher geometry</p>
+    <div class="eq-strip">
+      <span class="h">log(z) = ln|z| + i·arg(z)</span>
+      <span>φ = (1+√5)/2</span>
+      <span>e^(u+iv) = eᵘ·(cos v + i·sin v)</span>
+      <span class="h">z ↦ z^n</span>
+    </div>
+  </header>
+
+  <!-- ══ UPLOAD ══ -->
+
+  <div class="glass panel">
+    <div class="section-label">01 — Load Image</div>
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" id="fileInput" accept="image/jpeg,image/jpg,image/png,image/webp"/>
+      <div class="upload-icon">⬡</div>
+      <div class="upload-label">Drop image here or <strong>tap to browse</strong><br/>
+        <span style="font-size:12px;color:var(--text-dim)">JPG · JPEG · PNG · WEBP</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TRANSFORMS ══ -->
+
+  <div class="glass panel">
+    <div class="section-label">02 — Select Transform</div>
+    <div class="transform-grid" id="transformGrid">
+      <button class="t-btn active" data-t="phi-crop">
+        <span class="t-icon">⬟</span>φ-Ratio Crop
+        <span class="t-name">w:h = φ:1</span>
+      </button>
+      <button class="t-btn" data-t="complex-log">
+        <span class="t-icon">🌀</span>Complex Log
+        <span class="t-name">z ↦ log(z)</span>
+      </button>
+      <button class="t-btn" data-t="complex-exp">
+        <span class="t-icon">∞</span>Complex Exp
+        <span class="t-name">z ↦ e^z</span>
+      </button>
+      <button class="t-btn" data-t="golden-spiral">
+        <span class="t-icon">🔬</span>φ-Spiral Warp
+        <span class="t-name">log spiral</span>
+      </button>
+      <button class="t-btn" data-t="power">
+        <span class="t-icon">⚡</span>Power Map
+        <span class="t-name">z ↦ z^n</span>
+      </button>
+      <button class="t-btn" data-t="mobius">
+        <span class="t-icon">◎</span>Möbius
+        <span class="t-name">(az+b)/(cz+d)</span>
+      </button>
+    </div>
+
+```
+<!-- Dynamic param sliders -->
+<div class="sliders" id="paramsBox"></div>
+
+<div class="btn-row">
+  <button class="btn primary" id="applyBtn" disabled>▶ Apply Transform</button>
+  <button class="btn" id="resetBtn" disabled>↺ Reset</button>
+</div>
+<div class="progress-bar" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
+<div id="status"></div>
+```
+
+  </div>
+
+  <!-- ══ CANVAS ══ -->
+
+  <div class="glass panel">
+    <div class="section-label">03 — Result</div>
+    <div class="canvas-row">
+      <div class="canvas-wrap">
+        <div class="canvas-title">Original</div>
+        <div class="canvas-box">
+          <canvas id="srcCanvas"></canvas>
+          <div class="canvas-placeholder" id="srcPh">upload an image</div>
+        </div>
+      </div>
+      <div class="canvas-wrap">
+        <div class="canvas-title">Transformed</div>
+        <div class="canvas-box">
+          <canvas id="dstCanvas"></canvas>
+          <div class="phi-tag">φ</div>
+          <div class="canvas-placeholder" id="dstPh">awaiting transform</div>
+        </div>
+      </div>
+    </div>
+    <div class="btn-row" style="margin-top:12px">
+      <button class="btn" id="downloadBtn" disabled>⤓ Download PNG</button>
+    </div>
+  </div>
+
+  <!-- ══ NOTES ══ -->
+
+  <div class="glass notes-section">
+    <div class="notes-header" id="notesToggle">
+      <div class="notes-title-group">
+        <span class="notes-icon">✦</span>
+        <span class="notes-title">Mathematical Insights — The Secret Geometry</span>
+      </div>
+      <span class="notes-chevron" id="notesChevron">▾</span>
+    </div>
+
+```
+<div id="notesBody" style="display:none">
+  <div class="accordion" id="accordion">
+
+    <!-- 1 -->
+    <div class="accordion-item">
+      <div class="acc-header">
+        <div class="acc-title-row">
+          <span class="acc-num">01</span>
+          <span class="acc-title">The Golden Ratio φ — Universe's Favourite Proportion</span>
+          <span class="acc-tag">geometry</span>
+        </div>
+        <span class="acc-arrow">▶</span>
+      </div>
+      <div class="acc-body">
+        <div class="acc-content">
+          <div class="bullet">φ = <span class="math">(1 + √5) / 2 ≈ 1.6180339887…</span> — the unique positive number satisfying <span class="math">φ² = φ + 1</span>. It is the most irrational number; its continued fraction is <span class="math">[1; 1, 1, 1, …]</span>, converging slowest of all.</div>
+          <div class="bullet">Any rectangle with side ratio φ:1 can have a square cut from it, leaving a smaller golden rectangle — <em>infinitely</em>. The diagonal of each nested square traces out a <strong>golden spiral</strong>, which is a logarithmic spiral with growth factor <span class="math">e^(2π/ln φ)</span> per quarter turn.</div>
+          <div class="bullet">The golden spiral <em>is</em> a complex logarithmic spiral. Under the complex log map, it straightens into a horizontal line — the same "unrolling" that 3Blue1Brown applies to Escher's Print Gallery.</div>
+          <div class="bullet">Fibonacci numbers <span class="math">1, 1, 2, 3, 5, 8, 13, 21…</span> converge to φ in ratio; phyllotaxis (leaf/seed spirals in sunflowers) encodes φ to minimise overlap — nature minimising a complex-plane problem.</div>
+          <div class="note-aside">φ satisfies φ = 1 + 1/φ. Iterate this: start at 1, compute 1 + 1/x repeatedly. This is the fixed-point iteration for the golden ratio — a conformal contraction on the complex plane.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2 -->
+    <div class="accordion-item">
+      <div class="acc-header">
+        <div class="acc-title-row">
+          <span class="acc-num">02</span>
+          <span class="acc-title">Complex Numbers — The Hidden 2D Number System</span>
+          <span class="acc-tag">complex analysis</span>
+        </div>
+        <span class="acc-arrow">▶</span>
+      </div>
+      <div class="acc-body">
+        <div class="acc-content">
+          <div class="bullet">A complex number <span class="math">z = x + iy</span> lives on the 2D plane. Multiplication by <span class="math">i</span> rotates 90°; multiplication by <span class="math">re^(iθ)</span> scales by r and rotates by θ.</div>
+          <div class="bullet">Polar form: <span class="math">z = r·e^(iθ)</span> where <span class="math">r = |z|</span> is the modulus and θ = arg(z) is the argument. This is Euler's formula: <span class="math">e^(iθ) = cos θ + i·sin θ</span>.</div>
+          <div class="bullet">Image pixels are just complex numbers: pixel at (x, y) ↔ z = (x − W/2) + i(y − H/2). Every image transform is secretly a function <span class="math">f: ℂ → ℂ</span>.</div>
+          <div class="bullet">Holomorphic (complex-differentiable) functions preserve angles between curves at every point — they are <strong>conformal maps</strong>. They map infinitesimally small squares to squares.</div>
+          <div class="note-aside">The Cauchy–Riemann equations ∂u/∂x = ∂v/∂y, ∂u/∂y = −∂v/∂x are the condition for conformality. Escher intuitively satisfied these by making grid cells remain square.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3 -->
+    <div class="accordion-item">
+      <div class="acc-header">
+        <div class="acc-title-row">
+          <span class="acc-num">03</span>
+          <span class="acc-title">The Complex Logarithm — Unrolling the Spiral</span>
+          <span class="acc-tag">core transform</span>
+        </div>
+        <span class="acc-arrow">▶</span>
+      </div>
+      <div class="acc-body">
+        <div class="acc-content">
+          <div class="bullet"><span class="math">log(z) = ln|z| + i·arg(z)</span> — the complex log maps: radial distance → horizontal position, and angle → vertical position. Concentric circles become horizontal lines. Radial rays become vertical lines.</div>
+          <div class="bullet">To "take the logarithm of an image": for each output pixel (u, v), find its source via <span class="math">z = e^(u+iv)</span>. This <em>pulls back</em> the image along the exponential map — making spirals straight.</div>
+          <div class="bullet">The inverse: complex exponential <span class="math">e^z = e^u·(cos v + i·sin v)</span>. For each output pixel, sample the input at that complex position. Rectangles wrap into annuli. Straight lines become spirals.</div>
+          <div class="bullet">This is exactly how De Smit &amp; Lenstra reverse-engineered Escher's Print Gallery: they took the logarithm of the original print, recovering the "straight" Droste-effect image underneath the conformal warp.</div>
+          <div class="note-aside">The logarithm is multi-valued: log(z) = ln|z| + i(θ + 2πk). Choosing a branch (e.g. θ ∈ (−π, π]) gives the principal value log. Each sheet of the Riemann surface gives a differently rotated/scaled spiral.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4 -->
+    <div class="accordion-item">
+      <div class="acc-header">
+        <div class="acc-title-row">
+          <span class="acc-num">04</span>
+          <span class="acc-title">Escher's Print Gallery &amp; the Droste Effect</span>
+          <span class="acc-tag">art + math</span>
+        </div>
+        <span class="acc-arrow">▶</span>
+      </div>
+      <div class="acc-body">
+        <div class="acc-content">
+          <div class="bullet">Escher's 1956 lithograph <em>Prentententoonstelling</em> depicts a man viewing a print that contains the gallery containing the man — a self-referential loop. The Droste effect: the embedded image is <strong>256× smaller</strong> (= 4⁴, one 4× zoom per corner).</div>
+          <div class="bullet">The construction: start with a self-similar "straightened" image → apply a conformal mesh warp that distributes the 256× zoom factor around a loop → the warp is the complex exponential map with an appropriate scaling constant.</div>
+          <div class="bullet">Mathematically: the warp is <span class="math">f(z) = z · e^(2πi/4)</span> followed by exponentiation — multiplication by a complex constant in log-space corresponds to a spiral similarity (rotation + scaling) in the original plane.</div>
+          <div class="bullet">The blank circle at the centre is a <strong>branch point</strong> — the logarithm is undefined at z = 0. Every conformal Droste loop must have such a singularity at the origin.</div>
+          <div class="note-aside">De Smit and Lenstra (2003) showed the unique "correct" completion of Escher's missing centre is another copy of the whole picture, rotated by the exact phase angle of the conformal map. The diffusion model failed because it doesn't know complex analysis.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5 -->
+    <div class="accordion-item">
+      <div class="acc-header">
+        <div class="acc-title-row">
+          <span class="acc-num">05</span>
+          <span class="acc-title">Power Maps &amp; Möbius Transforms</span>
+          <span class="acc-tag">conformal zoo</span>
+        </div>
+        <span class="acc-arrow">▶</span>
+      </div>
+      <div class="acc-body">
+        <div class="acc-content">
+          <div class="bullet"><span class="math">z ↦ z^n</span>: the power map wraps angle by factor n while scaling radii. It is conformal everywhere except z = 0 (critical point). For n = 2: squares the complex plane — maps semicircle to full circle.</div>
+          <div class="bullet">Möbius (bilinear) transform: <span class="math">f(z) = (az+b)/(cz+d)</span> with <span class="math">ad−bc ≠ 0</span>. Maps circles and lines to circles and lines. All Möbius transforms form a group isomorphic to PGL(2, ℂ) — the symmetries of the Riemann sphere.</div>
+          <div class="bullet">The Riemann sphere is the complex plane plus a point at infinity (∞). Under stereographic projection, Möbius transforms become rotations, reflections, and dilations of the sphere. The golden ratio appears as the cross-ratio of the vertices of an icosahedron inscribed in the sphere.</div>
+          <div class="bullet">Schwarz–Christoffel formula: maps the upper half-plane to any polygon with prescribed angles. Used in cartography (conformal projections), electrostatics (boundary value problems), and fluid dynamics (wing design via Joukowski transform).</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6 -->
+    <div class="accordion-item">
+      <div class="acc-header">
+        <div class="acc-title-row">
+          <span class="acc-num">06</span>
+          <span class="acc-title">Why Conformal Maps Appear Everywhere in Physics</span>
+          <span class="acc-tag">deep structure</span>
+        </div>
+        <span class="acc-arrow">▶</span>
+      </div>
+      <div class="acc-body">
+        <div class="acc-content">
+          <div class="bullet">Laplace's equation <span class="math">∇²φ = 0</span> governs electrostatics, gravity, heat flow, and inviscid fluid flow. Its solutions (harmonic functions) are exactly the real/imaginary parts of holomorphic functions. Conformal maps preserve Laplace's equation — any solution in one domain transforms to a solution in a conformally equivalent domain.</div>
+          <div class="bullet">2D CFT (conformal field theory) in string theory and condensed matter physics exploits an infinite-dimensional conformal symmetry group (Virasoro algebra) — the operator content of the theory is determined entirely by conformal weights.</div>
+          <div class="bullet">The AdS/CFT correspondence (Maldacena duality) maps a gravitational theory in anti-de Sitter space to a conformal field theory on its boundary — the boundary is essentially the complex plane, and the bulk is its hyperbolic extension. φ appears as the self-similar scaling of this geometry.</div>
+          <div class="bullet">In signal processing: the <strong>Mellin transform</strong> is the logarithm's Fourier partner. It diagonalises scale-multiplication, just as the Fourier transform diagonalises translation. Image texture analysis under scale change uses the Mellin transform — via a log-polar coordinate change, which is exactly the complex log map applied to images.</div>
+          <div class="note-aside">The Penrose tiling — non-periodic tiling with fivefold symmetry — has local self-similarity with scaling ratio φ. Its diffraction pattern is the Fourier transform of a quasicrystal, and its projection geometry involves the complex logarithm of the golden ratio.</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /accordion -->
+</div><!-- /notesBody -->
+```
+
+  </div>
+
+</div><!-- /app -->
+
+<script>
+// ════════════════════════════════════════════════
+// State
+// ════════════════════════════════════════════════
+const φ = (1 + Math.sqrt(5)) / 2;
+let srcImg = null;
+let currentTransform = 'phi-crop';
+let params = {};
+
+// ════════════════════════════════════════════════
+// Transform definitions
+// ════════════════════════════════════════════════
+const TRANSFORMS = {
+  'phi-crop': {
+    label: 'φ-Ratio Crop',
+    params: [
+      { id: 'orient', label: 'Orient', min: 0, max: 1, step: 1, def: 0, fmt: v => v < 0.5 ? 'land' : 'port' },
+      { id: 'cx', label: 'Centre X', min: 0, max: 1, step: 0.01, def: 0.5, fmt: v => v.toFixed(2) },
+      { id: 'cy', label: 'Centre Y', min: 0, max: 1, step: 0.01, def: 0.5, fmt: v => v.toFixed(2) },
+    ],
+    apply(src, dst, W, H, p) {
+      const isPort = p.orient >= 0.5;
+      let cw, ch;
+      if (isPort) { ch = H; cw = Math.round(H / φ); }
+      else         { cw = W; ch = Math.round(W / φ); }
+      cw = Math.min(cw, W); ch = Math.min(ch, H);
+
+      const ox = Math.round((p.cx * W) - cw / 2);
+      const oy = Math.round((p.cy * H) - ch / 2);
+      const sx = Math.max(0, ox), sy = Math.max(0, oy);
+      const ex = Math.min(W, ox + cw), ey = Math.min(H, oy + ch);
+
+      const dW = ex - sx, dH = ey - sy;
+      dst.canvas.width = dW; dst.canvas.height = dH;
+      dst.drawImage(src.canvas, sx, sy, dW, dH, 0, 0, dW, dH);
+    }
+  },
+
+  'complex-log': {
+    label: 'Complex Log  z ↦ log(z)',
+    params: [
+      { id: 'scale', label: 'Scale', min: 0.05, max: 2.0, step: 0.01, def: 0.35, fmt: v => v.toFixed(2) },
+      { id: 'rotate', label: 'Phase', min: -3.14, max: 3.14, step: 0.01, def: 0, fmt: v => v.toFixed(2) },
+      { id: 'cycles', label: 'Cycles', min: 0.5, max: 4, step: 0.25, def: 1, fmt: v => v.toFixed(2) },
+    ],
+    apply(src, dst, W, H, p) {
+      const dW = W, dH = H;
+      dst.canvas.width = dW; dst.canvas.height = dH;
+      const srcD = src.getImageData(0, 0, W, H);
+      const dstD = dst.createImageData(dW, dH);
+      const s = p.scale, r0 = p.rotate, cycles = p.cycles;
+      const cx = W / 2, cy = H / 2;
+
+      for (let py = 0; py < dH; py++) {
+        for (let px = 0; px < dW; px++) {
+          // Normalise output to [-π·cycles .. π·cycles] × [-2..2]
+          const u = (px - dW/2) / (dW * s);
+          const v = ((py - dH/2) / (dH * s)) * Math.PI * cycles + r0;
+          // source ← exp(u + iv)
+          const eu = Math.exp(u);
+          const sx2 = eu * Math.cos(v);
+          const sy2 = eu * Math.sin(v);
+          const si = Math.round(sx2 * (W * s) + cx);
+          const sj = Math.round(sy2 * (H * s) + cy);
+          const di = (py * dW + px) * 4;
+          if (si >= 0 && si < W && sj >= 0 && sj < H) {
+            const si2 = (sj * W + si) * 4;
+            dstD.data[di]   = srcD.data[si2];
+            dstD.data[di+1] = srcD.data[si2+1];
+            dstD.data[di+2] = srcD.data[si2+2];
+            dstD.data[di+3] = 255;
+          }
+        }
+        if (py % 40 === 0) updateProgress(py / dH);
+      }
+      dst.putImageData(dstD, 0, 0);
+    }
+  },
+
+  'complex-exp': {
+    label: 'Complex Exp  z ↦ e^z',
+    params: [
+      { id: 'scale', label: 'Scale', min: 0.05, max: 2.0, step: 0.01, def: 0.3, fmt: v => v.toFixed(2) },
+      { id: 'rotate', label: 'Phase', min: -3.14, max: 3.14, step: 0.01, def: 0, fmt: v => v.toFixed(2) },
+    ],
+    apply(src, dst, W, H, p) {
+      dst.canvas.width = W; dst.canvas.height = H;
+      const srcD = src.getImageData(0, 0, W, H);
+      const dstD = dst.createImageData(W, H);
+      const s = p.scale, r0 = p.rotate;
+      const cx = W/2, cy = H/2;
+
+      for (let py = 0; py < H; py++) {
+        for (let px = 0; px < W; px++) {
+          const x = (px - cx) / (W * s);
+          const y = (py - cy) / (H * s);
+          const r  = Math.sqrt(x*x + y*y);
+          const th = Math.atan2(y, x) + r0;
+          // log(z): (ln r, θ)
+          const u = r < 1e-9 ? -20 : Math.log(r);
+          const v = th;
+          const si = Math.round(u * (W * s) + cx);
+          const sj = Math.round(v / Math.PI * (H * s) + cy);
+          const di = (py * W + px) * 4;
+          if (si >= 0 && si < W && sj >= 0 && sj < H) {
+            const src2 = (sj * W + si) * 4;
+            dstD.data[di]   = srcD.data[src2];
+            dstD.data[di+1] = srcD.data[src2+1];
+            dstD.data[di+2] = srcD.data[src2+2];
+            dstD.data[di+3] = 255;
+          }
+        }
+        if (py % 40 === 0) updateProgress(py / H);
+      }
+      dst.putImageData(dstD, 0, 0);
+    }
+  },
+
+  'golden-spiral': {
+    label: 'φ-Spiral Warp',
+    params: [
+      { id: 'scale', label: 'Scale', min: 0.1, max: 3.0, step: 0.05, def: 0.5, fmt: v => v.toFixed(2) },
+      { id: 'twist', label: 'Twist', min: -4, max: 4, step: 0.1, def: 1.0, fmt: v => v.toFixed(1) },
+      { id: 'zoom',  label: 'Zoom',  min: 0.5, max: 4,  step: 0.1, def: 1.0, fmt: v => v.toFixed(1) },
+    ],
+    apply(src, dst, W, H, p) {
+      dst.canvas.width = W; dst.canvas.height = H;
+      const srcD = src.getImageData(0, 0, W, H);
+      const dstD = dst.createImageData(W, H);
+      const cx = W/2, cy = H/2;
+      const k = Math.log(φ) / (Math.PI / 2); // golden spiral growth rate per 90°
+      const sc = p.scale, twist = p.twist, zoom = p.zoom;
+
+      for (let py = 0; py < H; py++) {
+        for (let px = 0; px < W; px++) {
+          let x = (px - cx) / (W * sc / zoom);
+          let y = (py - cy) / (H * sc / zoom);
+          const r = Math.sqrt(x*x + y*y);
+          if (r < 1e-9) continue;
+          const th = Math.atan2(y, x);
+          // Golden spiral: map r → r / e^(k·θ·twist), rotate
+          const newR = r / Math.exp(k * th * twist);
+          const newTh = th;
+          const si = Math.round(newR * Math.cos(newTh) * (W * sc / zoom) + cx);
+          const sj = Math.round(newR * Math.sin(newTh) * (H * sc / zoom) + cy);
+          const di = (py * W + px) * 4;
+          if (si >= 0 && si < W && sj >= 0 && sj < H) {
+            const s2 = (sj * W + si) * 4;
+            dstD.data[di]   = srcD.data[s2];
+            dstD.data[di+1] = srcD.data[s2+1];
+            dstD.data[di+2] = srcD.data[s2+2];
+            dstD.data[di+3] = 255;
+          }
+        }
+        if (py % 40 === 0) updateProgress(py / H);
+      }
+      dst.putImageData(dstD, 0, 0);
+    }
+  },
+
+  'power': {
+    label: 'Power Map  z ↦ z^n',
+    params: [
+      { id: 'n',     label: 'Power n', min: 0.5, max: 5, step: 0.05, def: 2, fmt: v => v.toFixed(2) },
+      { id: 'scale', label: 'Scale',   min: 0.1, max: 2, step: 0.02, def: 0.4, fmt: v => v.toFixed(2) },
+      { id: 'phase', label: 'Phase',   min: 0, max: 6.28, step: 0.05, def: 0, fmt: v => v.toFixed(2) },
+    ],
+    apply(src, dst, W, H, p) {
+      dst.canvas.width = W; dst.canvas.height = H;
+      const srcD = src.getImageData(0, 0, W, H);
+      const dstD = dst.createImageData(W, H);
+      const cx = W/2, cy = H/2, sc = p.scale, n = p.n, ph = p.phase;
+
+      for (let py = 0; py < H; py++) {
+        for (let px = 0; px < W; px++) {
+          const x = (px - cx) / (W * sc);
+          const y = (py - cy) / (H * sc);
+          const r = Math.sqrt(x*x + y*y);
+          const th = Math.atan2(y, x);
+          // z^n: r^(1/n), θ/n (inverse for pullback)
+          if (r < 1e-9) continue;
+          const newR = Math.pow(r, 1/n);
+          const newTh = (th - ph) / n;
+          const si = Math.round(newR * Math.cos(newTh) * W * sc + cx);
+          const sj = Math.round(newR * Math.sin(newTh) * H * sc + cy);
+          const di = (py * W + px) * 4;
+          if (si >= 0 && si < W && sj >= 0 && sj < H) {
+            const s2 = (sj * W + si) * 4;
+            dstD.data[di]   = srcD.data[s2];
+            dstD.data[di+1] = srcD.data[s2+1];
+            dstD.data[di+2] = srcD.data[s2+2];
+            dstD.data[di+3] = 255;
+          }
+        }
+        if (py % 40 === 0) updateProgress(py / H);
+      }
+      dst.putImageData(dstD, 0, 0);
+    }
+  },
+
+  'mobius': {
+    label: 'Möbius  (az+b)/(cz+d)',
+    params: [
+      { id: 'a', label: 'Re(a)', min: -2, max: 2, step: 0.02, def: 1.0, fmt: v => v.toFixed(2) },
+      { id: 'b', label: 'Im(b)', min: -2, max: 2, step: 0.02, def: 0.5, fmt: v => v.toFixed(2) },
+      { id: 'c', label: 'Re(c)', min: -2, max: 2, step: 0.02, def: 0.5, fmt: v => v.toFixed(2) },
+      { id: 'scale', label: 'Scale', min: 0.1, max: 2, step: 0.02, def: 0.4, fmt: v => v.toFixed(2) },
+    ],
+    apply(src, dst, W, H, p) {
+      dst.canvas.width = W; dst.canvas.height = H;
+      const srcD = src.getImageData(0, 0, W, H);
+      const dstD = dst.createImageData(W, H);
+      const cx = W/2, cy = H/2, sc = p.scale;
+      // f(z) = (z + bi) / (cz + 1), pullback: z = (w - bi) / (1 - cw)
+      const br = 0, bi = p.b, cr = p.c, ci = 0;
+
+      for (let py = 0; py < H; py++) {
+        for (let px = 0; px < W; px++) {
+          const wx = (px - cx) / (W * sc);
+          const wy = (py - cy) / (H * sc);
+          // inverse Möbius: z = (dw - b) / (-cw + a), a=1, d=1
+          // numerator: w - b  → (wx - br) + i(wy - bi)
+          const nx = wx - br, ny = wy - bi;
+          // denominator: -cw + 1 = (1 - cr·wx + ci·wy) + i(-cr·wy - ci·wx)
+          const dx2 = 1 - cr*wx + ci*wy;
+          const dy2 = -cr*wy - ci*wx;
+          const denom = dx2*dx2 + dy2*dy2;
+          if (denom < 1e-12) continue;
+          const zx = (nx*dx2 + ny*dy2) / denom;
+          const zy = (ny*dx2 - nx*dy2) / denom;
+          const si = Math.round(zx * W * sc + cx);
+          const sj = Math.round(zy * H * sc + cy);
+          const di = (py * W + px) * 4;
+          if (si >= 0 && si < W && sj >= 0 && sj < H) {
+            const s2 = (sj * W + si) * 4;
+            dstD.data[di]   = srcD.data[s2];
+            dstD.data[di+1] = srcD.data[s2+1];
+            dstD.data[di+2] = srcD.data[s2+2];
+            dstD.data[di+3] = 255;
+          }
+        }
+        if (py % 40 === 0) updateProgress(py / H);
+      }
+      dst.putImageData(dstD, 0, 0);
+    }
+  }
+};
+
+// ════════════════════════════════════════════════
+// DOM refs
+// ════════════════════════════════════════════════
+const fileInput  = document.getElementById('fileInput');
+const uploadZone = document.getElementById('uploadZone');
+const applyBtn   = document.getElementById('applyBtn');
+const resetBtn   = document.getElementById('resetBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+const srcCanvas  = document.getElementById('srcCanvas');
+const dstCanvas  = document.getElementById('dstCanvas');
+const srcPh      = document.getElementById('srcPh');
+const dstPh      = document.getElementById('dstPh');
+const paramsBox  = document.getElementById('paramsBox');
+const progressBar = document.getElementById('progressBar');
+const progressFill = document.getElementById('progressFill');
+const statusEl   = document.getElementById('status');
+
+const srcCtx = srcCanvas.getContext('2d');
+const dstCtx = dstCanvas.getContext('2d');
+
+// ════════════════════════════════════════════════
+// Helpers
+// ════════════════════════════════════════════════
+function setStatus(msg, cls='') {
+  statusEl.textContent = msg; statusEl.className = cls;
+}
+function updateProgress(f) {
+  progressFill.style.width = (f * 100) + '%';
+}
+
+function buildParams() {
+  const def = TRANSFORMS[currentTransform];
+  params = {};
+  paramsBox.innerHTML = '';
+  def.params.forEach(pd => {
+    params[pd.id] = pd.def;
+    const row = document.createElement('div');
+    row.className = 'slider-row';
+    const lbl = document.createElement('div');
+    lbl.className = 'slider-label'; lbl.textContent = pd.label;
+    const inp = document.createElement('input');
+    inp.type = 'range'; inp.min = pd.min; inp.max = pd.max;
+    inp.step = pd.step; inp.value = pd.def;
+    inp.style.setProperty('--pct', ((pd.def - pd.min)/(pd.max - pd.min)*100)+'%');
+    const val = document.createElement('div');
+    val.className = 'slider-val'; val.textContent = pd.fmt(pd.def);
+    inp.addEventListener('input', () => {
+      const v = parseFloat(inp.value);
+      params[pd.id] = v;
+      val.textContent = pd.fmt(v);
+      const pct = ((v - pd.min)/(pd.max - pd.min)*100)+'%';
+      inp.style.setProperty('--pct', pct);
+    });
+    row.append(lbl, inp, val);
+    paramsBox.appendChild(row);
+  });
+}
+
+function loadImage(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      srcImg = img;
+      // Display source — cap at 600px
+      const maxD = 600;
+      const scale = Math.min(1, maxD / Math.max(img.width, img.height));
+      srcCanvas.width  = Math.round(img.width  * scale);
+      srcCanvas.height = Math.round(img.height * scale);
+      srcCtx.drawImage(img, 0, 0, srcCanvas.width, srcCanvas.height);
+      srcPh.style.display = 'none';
+      srcCanvas.style.display = 'block';
+      dstCanvas.style.display = 'none';
+      dstPh.style.display = 'block';
+      applyBtn.disabled = false;
+      resetBtn.disabled = false;
+      setStatus('Image loaded — ' + img.width + '×' + img.height + 'px', 'ok');
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function applyTransform() {
+  if (!srcImg) return;
+  applyBtn.disabled = true;
+  progressBar.classList.add('show'); updateProgress(0);
+  setStatus('Computing…');
+
+  await new Promise(r => setTimeout(r, 10));
+
+  try {
+    const t = TRANSFORMS[currentTransform];
+    const W = srcCanvas.width, H = srcCanvas.height;
+    // Prepare off-screen canvas matching source
+    const offSrc = document.createElement('canvas');
+    offSrc.width = W; offSrc.height = H;
+    const offSrcCtx = offSrc.getContext('2d');
+    offSrcCtx.drawImage(srcCanvas, 0, 0);
+
+    dstCanvas.width = W; dstCanvas.height = H;
+    dstCanvas.style.display = 'none';
+
+    t.apply(offSrcCtx, dstCtx, W, H, params);
+
+    dstCanvas.style.display = 'block';
+    dstPh.style.display = 'none';
+    downloadBtn.disabled = false;
+    updateProgress(1);
+    setStatus('Done — ' + dstCanvas.width + '×' + dstCanvas.height + 'px', 'ok');
+  } catch(e) {
+    setStatus('Error: ' + e.message, 'err');
+  }
+  applyBtn.disabled = false;
+  setTimeout(() => progressBar.classList.remove('show'), 600);
+}
+
+function resetAll() {
+  if (!srcImg) return;
+  srcCtx.drawImage(srcImg, 0, 0, srcCanvas.width, srcCanvas.height);
+  dstCanvas.style.display = 'none';
+  dstPh.style.display = 'block';
+  downloadBtn.disabled = true;
+  setStatus('Reset');
+}
+
+// ════════════════════════════════════════════════
+// Event wiring
+// ════════════════════════════════════════════════
+fileInput.addEventListener('change', e => {
+  if (e.target.files[0]) loadImage(e.target.files[0]);
+});
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault(); uploadZone.classList.remove('drag');
+  if (e.dataTransfer.files[0]) loadImage(e.dataTransfer.files[0]);
+});
+
+document.querySelectorAll('.t-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.t-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentTransform = btn.dataset.t;
+    buildParams();
+    setStatus('Transform: ' + TRANSFORMS[currentTransform].label);
+  });
+});
+
+applyBtn.addEventListener('click', applyTransform);
+resetBtn.addEventListener('click', resetAll);
+downloadBtn.addEventListener('click', () => {
+  const link = document.createElement('a');
+  link.download = 'phi-transform.png';
+  link.href = dstCanvas.toDataURL('image/png');
+  link.click();
+});
+
+// ════════════════════════════════════════════════
+// Notes accordion
+// ════════════════════════════════════════════════
+const notesToggle  = document.getElementById('notesToggle');
+const notesBody    = document.getElementById('notesBody');
+const notesChevron = document.getElementById('notesChevron');
+
+notesToggle.addEventListener('click', () => {
+  const open = notesBody.style.display !== 'none';
+  notesBody.style.display = open ? 'none' : 'block';
+  notesChevron.classList.toggle('open', !open);
+});
+
+document.querySelectorAll('.acc-header').forEach(hdr => {
+  hdr.addEventListener('click', () => {
+    const body = hdr.nextElementSibling;
+    const arrow = hdr.querySelector('.acc-arrow');
+    const isOpen = body.classList.contains('open');
+    body.classList.toggle('open', !isOpen);
+    arrow.classList.toggle('open', !isOpen);
+  });
+});
+
+// Init
+buildParams();
+setStatus('Upload an image to begin');
+</script>
+
+</body>
+</html>
